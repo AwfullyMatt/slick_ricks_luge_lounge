@@ -1,5 +1,6 @@
 #![allow(clippy::type_complexity)]
 
+mod actions;
 mod audio;
 mod loading;
 mod luge;
@@ -8,6 +9,7 @@ mod player;
 mod settings;
 mod ui;
 
+use crate::actions::ActionsPlugin;
 use crate::audio::InternalAudioPlugin;
 use crate::loading::LoadingPlugin;
 use crate::luge::LugePlugin;
@@ -62,6 +64,7 @@ impl Plugin for GamePlugin {
             MenuPlugin,
             InternalAudioPlugin,
             PlayerPlugin,
+            ActionsPlugin,
             LugePlugin,
             SettingsPlugin,
         ));
