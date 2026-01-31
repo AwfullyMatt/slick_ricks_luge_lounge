@@ -19,7 +19,6 @@ impl UiColor {
             Light => Color::srgb(0.290, 0.659, 0.506),
             Lighter => Color::srgb(0.451, 0.937, 0.910),
             Lightest => Color::srgb(0.925, 0.953, 0.690),
-            _ => Color::srgb(0.0, 0.0, 0.0),
         }
     }
 }

@@ -83,15 +83,14 @@ impl Resolution {
             // lane is 200 wide, that's x2 scale
             // at 720p, 200 / 3 = 66.6
             // 66 x 2 = 132
-            Resolution::Sd => (-132.0, 132.0),
+            // +/-5 x scale for edge safety
+            Resolution::Sd => (-122.0, 122.0),
             // times 3 at 1080p
-            Resolution::Hd => (-198.0, 198.0),
+            Resolution::Hd => (-183.0, 183.0),
             // times 4 at 1440p
-            Resolution::Qhd => (-264.0, 264.0),
-            // times 5 at 4k
-            Resolution::Uhd => (-330.0, 330.0),
-            // should be unreachable
-            _ => (0.0, 0.0),
+            Resolution::Qhd => (-244.0, 244.0),
+            // times 6 at 4k
+            Resolution::Uhd => (-366.0, 366.0),
         }
     }
 
@@ -100,8 +99,7 @@ impl Resolution {
             Resolution::Sd => 2.0,
             Resolution::Hd => 3.0,
             Resolution::Qhd => 4.0,
-            Resolution::Uhd => 5.0,
-            _ => 0.0,
+            Resolution::Uhd => 6.0,
         }
     }
 }

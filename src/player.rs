@@ -11,12 +11,32 @@ impl Plugin for PlayerPlugin {
     }
 
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Playing), spawn_player);
+        app.add_systems(OnEnter(GameState::Playing), spawn_player)
+            .insert_resource(PlayerStats::default());
     }
 }
 
 #[derive(Component)]
 pub struct Player;
+
+#[derive(Resource)]
+pub struct PlayerStats {
+    pub attack: i32,
+    pub defence: i32,
+    pub speed: i32,
+    pub luck: i32,
+}
+
+impl Default for PlayerStats {
+    fn default() -> Self {
+        Self {
+            attack: 1,
+            defence: 1,
+            speed: 1,
+            luck: 1,
+        }
+    }
+}
 
 impl Player {
     fn default_input_map() -> InputMap<LugeAction> {

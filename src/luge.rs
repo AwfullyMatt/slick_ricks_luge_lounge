@@ -2,7 +2,11 @@ use bevy::prelude::*;
 use leafwing_input_manager::prelude::ActionState;
 
 use crate::{
-    GameState, actions::LugeAction, loading::SpriteAssets, player::Player, settings::Settings,
+    GameState,
+    actions::LugeAction,
+    loading::SpriteAssets,
+    player::{Player, PlayerStats},
+    settings::Settings,
 };
 
 pub struct LugePlugin;
@@ -15,15 +19,16 @@ impl Plugin for LugePlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             OnEnter(GameState::Playing),
-            (spawn_luigee, spawn_lanes_sprite, update_lanes),
+            (spawn_luigee, spawn_lanes, update_lanes),
         )
         .add_systems(
             Update,
-            (move_luigee, update_luigee_sprite).run_if(in_state(GameState::Playing)),
+            (move_luigee, update_luigee_sprite, scroll_lanes).run_if(in_state(GameState::Playing)),
         )
         .add_systems(OnExit(GameState::Playing), cleanup_luge)
         .insert_resource(Lanes::default())
-        .insert_resource(PlayerLane::default());
+        .insert_resource(PlayerLane::default())
+        .insert_resource(ScrollSpeed::default());
     }
 }
 
@@ -33,21 +38,25 @@ struct LugeCleanup;
 #[derive(Component)]
 struct LuigeeSprite;
 
+#[derive(Component)]
+struct LaneSprite;
+
 fn spawn_luigee(mut commands: Commands, settings: Res<Settings>, sprites: Res<SpriteAssets>) {
     let y = -(settings.resolution.vec2().y / 3.0);
+
     commands.spawn((
         Player,
         Sprite::from_image(sprites.luigee.clone()),
         Transform {
             translation: Vec3::new(0.0, y, 0.0),
-            scale: Vec3::splat(3.0),
+            scale: Vec3::splat(settings.resolution.scale()),
             ..default()
         },
         LuigeeSprite,
     ));
 }
 
-fn spawn_lanes_sprite(mut commands: Commands, sprites: Res<SpriteAssets>, settings: Res<Settings>) {
+fn spawn_lanes(mut commands: Commands, sprites: Res<SpriteAssets>, settings: Res<Settings>) {
     commands.spawn((
         LugeCleanup,
         Sprite::from_image(sprites.lanes.clone()),
@@ -56,7 +65,28 @@ fn spawn_lanes_sprite(mut commands: Commands, sprites: Res<SpriteAssets>, settin
             scale: Vec3::splat(settings.resolution.scale()),
             ..default()
         },
+        LaneSprite,
     ));
+
+    commands.spawn((
+        LugeCleanup,
+        Sprite::from_image(sprites.lanes.clone()),
+        Transform {
+            translation: Vec3::new(0.0, 360.0 * settings.resolution.scale(), -1.0),
+            scale: Vec3::splat(settings.resolution.scale()),
+            ..default()
+        },
+        LaneSprite,
+    ));
+}
+
+#[derive(Resource, Deref, DerefMut, Copy, Clone)]
+pub struct ScrollSpeed(pub f32);
+
+impl Default for ScrollSpeed {
+    fn default() -> Self {
+        Self(1000.0)
+    }
 }
 
 #[derive(Resource, Copy, Clone, Default, Deref, DerefMut)]
@@ -104,7 +134,7 @@ pub struct Lane {
     pub x: f32,
 }
 
-#[derive(Default, Copy, Clone)]
+#[derive(Default, Copy, Clone, Debug)]
 pub enum LaneLocation {
     Left,
     #[default]
@@ -173,5 +203,26 @@ fn update_luigee_sprite(
 ) {
     if player_lane.is_changed() {
         transform.translation.x = lanes.x_for(**player_lane);
+        info!("Moved to {:?}", **player_lane);
     };
+}
+
+fn scroll_lanes(
+    time: Res<Time>,
+    player_stats: Res<PlayerStats>,
+    scroll_speed: Res<ScrollSpeed>,
+    settings: Res<Settings>,
+    mut query_lane_sprites: Query<&mut Transform, With<LaneSprite>>,
+) {
+    let speed = **scroll_speed * (player_stats.speed as f32 / 10.0);
+    let delta = speed * time.delta_secs();
+    for mut transform in query_lane_sprites.iter_mut() {
+        transform.translation.y -= delta;
+
+        // screen wrap
+        let y = settings.resolution.vec2().y;
+        if transform.translation.y <= -y {
+            transform.translation.y += y * 2.0;
+        }
+    }
 }

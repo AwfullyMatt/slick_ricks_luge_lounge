@@ -86,7 +86,7 @@ fn setup_menu(mut commands: Commands, textures: Res<TextureAssets>, sprites: Res
                 .with_child((
                     Text::new("Play"),
                     TextFont {
-                        font_size: 40.0,
+                        font_size: 36.0,
                         ..default()
                     },
                     TextColor(UiColor::Darkest.linear_rgb()),
@@ -111,7 +111,7 @@ fn setup_menu(mut commands: Commands, textures: Res<TextureAssets>, sprites: Res
                 .with_child((
                     Text::new("Settings"),
                     TextFont {
-                        font_size: 30.0,
+                        font_size: 26.0,
                         ..default()
                     },
                     TextColor(UiColor::Darkest.linear_rgb()),
