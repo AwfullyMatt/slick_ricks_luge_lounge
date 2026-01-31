@@ -2,10 +2,11 @@ use bevy::prelude::*;
 use leafwing_input_manager::prelude::ActionState;
 
 use crate::{
-    GameState, Resolution,
+    GameState, LugeState, Resolution,
     actions::LugeAction,
     loading::SpriteAssets,
     player::{Player, PlayerStats},
+    ui::UiColor,
 };
 
 pub struct LugePlugin;
@@ -18,11 +19,11 @@ impl Plugin for LugePlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             OnEnter(GameState::Playing),
-            (spawn_luigee, spawn_lanes, update_lanes),
+            (spawn_luigee, spawn_lanes, spawn_slick_ui, update_lanes),
         )
         .add_systems(
             Update,
-            (move_luigee, update_luigee_sprite, scroll_lanes).run_if(in_state(GameState::Playing)),
+            (move_luigee, update_luigee_sprite, scroll_lanes).run_if(in_state(LugeState::Launched)),
         )
         .insert_resource(Lanes::default())
         .insert_resource(PlayerLane::default())
@@ -197,4 +198,64 @@ fn scroll_lanes(
             transform.translation.y += y * 2.0;
         }
     }
+}
+
+fn spawn_slick_ui(mut commands: Commands, resolution: Res<Resolution>, sprites: Res<SpriteAssets>) {
+    let s = resolution.ui_scale();
+    let border = 8.0 * s;
+
+    commands
+        .spawn((
+            Name::new("Slick UI Parent"),
+            Node {
+                width: Val::Percent(25.0),
+                height: Val::Percent(100.0),
+                position_type: PositionType::Absolute,
+                left: Val::Px(0.0),
+                border: UiRect::all(Val::Px(border)),
+                ..default()
+            },
+            BackgroundColor(UiColor::Dark.color()),
+            BorderColor::all(UiColor::Darkest.color()),
+        ))
+        .with_children(|parent| {
+            parent
+                .spawn((
+                    Name::new("Slick Rick Container"),
+                    Node {
+                        width: Val::Percent(100.0),
+                        height: Val::Percent(35.0),
+                        border: UiRect::all(Val::Px(border)),
+                        padding: UiRect::axes(Val::Px(0.0), Val::Px(0.0)),
+                        position_type: PositionType::Absolute,
+                        top: Val::Px(0.0),
+                        ..default()
+                    },
+                    BorderColor::all(UiColor::Darker.color()),
+                ))
+                .with_children(|img_parent| {
+                    img_parent.spawn((
+                        Name::new("Slick Rick"),
+                        ImageNode::new(sprites.slick_rick.clone()),
+                        Node {
+                            width: Val::Percent(100.0),
+                            height: Val::Percent(100.0),
+                            ..default()
+                        },
+                    ));
+                });
+            parent.spawn((
+                Name::new("Rick Text Container"),
+                Node {
+                    width: Val::Percent(100.0),
+                    height: Val::Percent(65.0),
+                    border: UiRect::all(Val::Px(border)),
+                    padding: UiRect::axes(Val::Px(0.0), Val::Px(0.0)),
+                    position_type: PositionType::Absolute,
+                    bottom: Val::Px(0.0),
+                    ..default()
+                },
+                BorderColor::all(UiColor::Light.color()),
+            ));
+        });
 }

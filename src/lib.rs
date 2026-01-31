@@ -20,17 +20,26 @@ use crate::ui::{UiColor, UiPlugin};
 
 use bevy::app::App;
 use bevy::prelude::*;
+//use bevy_inspector_egui::{bevy_egui::EguiPlugin, quick::WorldInspectorPlugin};
 
 //#[cfg(debug_assertions)]
 //use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 
 #[derive(States, Default, Clone, Eq, PartialEq, Debug, Hash)]
-enum GameState {
+pub enum GameState {
     #[default]
     Loading,
     Playing,
     Menu,
     Settings,
+}
+
+#[derive(SubStates, Clone, PartialEq, Eq, Hash, Debug, Default)]
+#[source(GameState = GameState::Playing)]
+pub enum LugeState {
+    #[default]
+    Loadout,
+    Launched,
 }
 
 #[derive(Resource, Default, Clone, Copy)]
@@ -105,6 +114,8 @@ impl Plugin for GamePlugin {
         app.init_state::<GameState>();
         // Spawn camera
         app.add_systems(Startup, spawn_camera);
+        // External plugins
+        //app.add_plugins((EguiPlugin::default(), WorldInspectorPlugin::new()));
 
         // #[cfg(debug_assertions)]
         // {

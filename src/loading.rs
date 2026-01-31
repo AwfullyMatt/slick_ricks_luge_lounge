@@ -12,6 +12,7 @@ impl Plugin for LoadingPlugin {
                 .continue_to_state(GameState::Menu)
                 .load_collection::<AudioAssets>()
                 .load_collection::<TextureAssets>()
+                .load_collection::<FontAssets>()
                 .load_collection::<SpriteAssets>(),
         );
     }
@@ -43,4 +44,10 @@ pub struct SpriteAssets {
 
     #[asset(path = "sprites/lanes.png")]
     pub lanes: Handle<Image>,
+}
+
+#[derive(AssetCollection, Resource)]
+pub struct FontAssets {
+    #[asset(path = "fonts/Tiny5-Regular.ttf")]
+    pub tiny5: Handle<Font>,
 }

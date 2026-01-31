@@ -1,4 +1,4 @@
-use crate::loading::{SpriteAssets, TextureAssets};
+use crate::loading::{FontAssets, SpriteAssets, TextureAssets};
 use crate::ui::{ButtonColors, ChangeState, OpenLink, UiColor, font_size_for};
 use crate::{GameState, Resolution};
 use bevy::prelude::*;
@@ -16,6 +16,7 @@ fn setup_menu(
     textures: Res<TextureAssets>,
     sprites: Res<SpriteAssets>,
     resolution: Res<Resolution>,
+    fonts: Res<FontAssets>,
 ) {
     let s = resolution.ui_scale();
 
@@ -38,6 +39,9 @@ fn setup_menu(
     let settings_font = font_size_for(btn_w, btn_h, "Settings");
     let footer_text_w = footer_w - icon_size;
     let footer_font = font_size_for(footer_text_w, footer_h, "Made with Bevy");
+
+    //button colors
+    let button_colors = ButtonColors::default();
 
     // spawn title screen
     commands.spawn((
@@ -63,7 +67,6 @@ fn setup_menu(
             DespawnOnExit(GameState::Menu),
         ))
         .with_children(|children| {
-            let button_colors = ButtonColors::default();
             children
                 .spawn((
                     Button,
@@ -84,6 +87,7 @@ fn setup_menu(
                 .with_child((
                     Text::new("Play"),
                     TextFont {
+                        font: fonts.tiny5.clone(),
                         font_size: play_font,
                         ..default()
                     },
@@ -103,12 +107,13 @@ fn setup_menu(
                     },
                     BorderColor::all(UiColor::Darkest.color()),
                     BackgroundColor(button_colors.normal),
-                    button_colors,
+                    button_colors.clone(),
                     ChangeState(GameState::Settings),
                 ))
                 .with_child((
                     Text::new("Settings"),
                     TextFont {
+                        font: fonts.tiny5.clone(),
                         font_size: settings_font,
                         ..default()
                     },
@@ -138,23 +143,22 @@ fn setup_menu(
                         justify_content: JustifyContent::SpaceAround,
                         align_items: AlignItems::Center,
                         padding: UiRect::all(Val::Px(footer_pad)),
+                        border: UiRect::all(Val::Px(border)),
                         ..Default::default()
                     },
-                    BackgroundColor(Color::NONE),
-                    ButtonColors {
-                        normal: Color::NONE,
-                        ..default()
-                    },
+                    BorderColor::all(UiColor::Darkest.color()),
+                    button_colors.clone(),
                     OpenLink("https://bevyengine.org"),
                 ))
                 .with_children(|parent| {
                     parent.spawn((
                         Text::new("Made with Bevy"),
                         TextFont {
+                            font: fonts.tiny5.clone(),
                             font_size: footer_font,
                             ..default()
                         },
-                        TextColor(Color::linear_rgb(0.9, 0.9, 0.9)),
+                        TextColor(UiColor::Darkest.color()),
                     ));
                     parent.spawn((
                         ImageNode {
@@ -176,23 +180,22 @@ fn setup_menu(
                         justify_content: JustifyContent::SpaceAround,
                         align_items: AlignItems::Center,
                         padding: UiRect::all(Val::Px(footer_pad)),
+                        border: UiRect::all(Val::Px(border)),
                         ..default()
                     },
-                    BackgroundColor(Color::NONE),
-                    ButtonColors {
-                        normal: Color::NONE,
-                        hovered: Color::linear_rgb(0.25, 0.25, 0.25),
-                    },
+                    BorderColor::all(UiColor::Darkest.color()),
+                    button_colors.clone(),
                     OpenLink("https://github.com/NiklasEi/bevy_game_template"),
                 ))
                 .with_children(|parent| {
                     parent.spawn((
                         Text::new("Open source"),
                         TextFont {
+                            font: fonts.tiny5.clone(),
                             font_size: footer_font,
                             ..default()
                         },
-                        TextColor(Color::linear_rgb(0.9, 0.9, 0.9)),
+                        TextColor(UiColor::Darkest.color()),
                     ));
                     parent.spawn((
                         ImageNode::new(textures.github.clone()),

@@ -2,6 +2,7 @@ use bevy::prelude::*;
 
 use crate::{
     GameState, Resolution,
+    loading::FontAssets,
     ui::{ButtonColors, ChangeState, UiColor},
 };
 
@@ -41,7 +42,11 @@ fn set_window_resolution(mut window: Single<&mut Window>, resolution: Res<Resolu
     window.resolution.set(res.x, res.y);
 }
 
-fn spawn_settings_menu(mut commands: Commands, resolution: Res<Resolution>) {
+fn spawn_settings_menu(
+    mut commands: Commands,
+    resolution: Res<Resolution>,
+    fonts: Res<FontAssets>,
+) {
     let s = resolution.ui_scale();
 
     // button dimensions (auto-height — text determines button size)
@@ -81,9 +86,11 @@ fn spawn_settings_menu(mut commands: Commands, resolution: Res<Resolution>) {
             parent.spawn((
                 Text::new("Settings"),
                 TextFont {
+                    font: fonts.tiny5.clone(),
                     font_size: title_font,
                     ..default()
                 },
+                TextColor(UiColor::Darkest.color()),
             ));
 
             let button_colors = ButtonColors::default();
@@ -97,9 +104,11 @@ fn spawn_settings_menu(mut commands: Commands, resolution: Res<Resolution>) {
                     row.spawn((
                         Text::new("Resolution:"),
                         TextFont {
+                            font: fonts.tiny5.clone(),
                             font_size: label_font,
                             ..default()
                         },
+                        TextColor(UiColor::Darkest.color()),
                     ));
 
                     row.spawn(Node {
@@ -126,9 +135,11 @@ fn spawn_settings_menu(mut commands: Commands, resolution: Res<Resolution>) {
                                 DropdownLabel,
                                 Text::new(resolution.label()),
                                 TextFont {
+                                    font: fonts.tiny5.clone(),
                                     font_size: btn_font,
                                     ..default()
                                 },
+                                TextColor(UiColor::Darkest.color()),
                             ));
 
                         dropdown
@@ -171,36 +182,40 @@ fn spawn_settings_menu(mut commands: Commands, resolution: Res<Resolution>) {
                                         .with_child((
                                             Text::new(res.label()),
                                             TextFont {
+                                                font: fonts.tiny5.clone(),
                                                 font_size: btn_font,
                                                 ..default()
                                             },
+                                            TextColor(UiColor::Darkest.color()),
                                         ));
                                 }
                             });
                     });
-
-                    row.spawn((
-                        Button,
-                        Node {
-                            width: Val::Px(btn_w),
-                            border: UiRect::all(Val::Px(border)),
-                            padding: UiRect::axes(Val::Px(pad_x), Val::Px(pad_y)),
-                            justify_content: JustifyContent::Center,
-                            ..default()
-                        },
-                        BackgroundColor(UiColor::Lighter.color()),
-                        BorderColor::all(UiColor::Darkest.color()),
-                        ChangeState(GameState::Menu),
-                        button_colors.clone(),
-                    ))
-                    .with_child((
-                        Text::new("Back"),
-                        TextFont {
-                            font_size: btn_font,
-                            ..default()
-                        },
-                    ));
                 });
+            parent
+                .spawn((
+                    Button,
+                    Node {
+                        width: Val::Px(btn_w),
+                        border: UiRect::all(Val::Px(border)),
+                        padding: UiRect::axes(Val::Px(pad_x), Val::Px(pad_y)),
+                        justify_content: JustifyContent::Center,
+                        ..default()
+                    },
+                    BackgroundColor(UiColor::Lighter.color()),
+                    BorderColor::all(UiColor::Darkest.color()),
+                    ChangeState(GameState::Menu),
+                    button_colors.clone(),
+                ))
+                .with_child((
+                    Text::new("Back"),
+                    TextFont {
+                        font: fonts.tiny5.clone(),
+                        font_size: btn_font,
+                        ..default()
+                    },
+                    TextColor(UiColor::Darkest.color()),
+                ));
         });
 }
 
