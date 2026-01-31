@@ -1,9 +1,8 @@
 use bevy::prelude::*;
 
 use crate::{
-    GameState,
-    menu::{ButtonColors, ChangeState},
-    ui::UiColor,
+    GameState, Resolution,
+    ui::{ButtonColors, ChangeState, UiColor},
 };
 
 pub struct SettingsPlugin;
@@ -14,21 +13,17 @@ impl Plugin for SettingsPlugin {
     }
 
     fn build(&self, app: &mut App) {
-        app.insert_resource(Settings::default());
+        app.init_resource::<Resolution>();
         app.add_systems(Startup, set_window_resolution)
             .add_systems(OnEnter(GameState::Settings), spawn_settings_menu)
             .add_systems(
                 Update,
                 (toggle_dropdown, select_option).run_if(in_state(GameState::Settings)),
-            )
-            .add_systems(OnExit(GameState::Settings), cleanup_settings);
+            );
     }
 }
 
 // marker components
-#[derive(Component)]
-pub struct SettingsCleanup;
-
 #[derive(Component)]
 pub struct DropdownHead;
 
@@ -41,86 +36,44 @@ pub struct DropdownPanel;
 #[derive(Component)]
 pub struct DropdownChoice(pub Resolution);
 
-#[derive(Resource, Default)]
-pub struct Settings {
-    pub resolution: Resolution,
-}
-
-#[derive(Default, Clone, Copy)]
-pub enum Resolution {
-    Sd,
-    #[default]
-    Hd,
-    Qhd,
-    Uhd,
-}
-
-impl Resolution {
-    const RESOLUTIONS: [Self; 4] = [Self::Sd, Self::Hd, Self::Qhd, Self::Uhd];
-
-    pub fn vec2(&self) -> Vec2 {
-        use Resolution::*;
-        match self {
-            Sd => Vec2::new(1280.0, 720.0),
-            Hd => Vec2::new(1920.0, 1080.0),
-            Qhd => Vec2::new(2560.0, 1440.0),
-            Uhd => Vec2::new(3840.0, 2160.0),
-        }
-    }
-
-    pub fn label(&self) -> &'static str {
-        use Resolution::*;
-        match self {
-            Sd => "720p",
-            Hd => "1080p",
-            Qhd => "1440p",
-            Uhd => "4k",
-        }
-    }
-
-    pub fn calculate_lanes(&self) -> (f32, f32) {
-        match self {
-            // lane is 200 wide, that's x2 scale
-            // at 720p, 200 / 3 = 66.6
-            // 66 x 2 = 132
-            // +/-5 x scale for edge safety
-            Resolution::Sd => (-122.0, 122.0),
-            // times 3 at 1080p
-            Resolution::Hd => (-183.0, 183.0),
-            // times 4 at 1440p
-            Resolution::Qhd => (-244.0, 244.0),
-            // times 6 at 4k
-            Resolution::Uhd => (-366.0, 366.0),
-        }
-    }
-
-    pub fn scale(&self) -> f32 {
-        match self {
-            Resolution::Sd => 2.0,
-            Resolution::Hd => 3.0,
-            Resolution::Qhd => 4.0,
-            Resolution::Uhd => 6.0,
-        }
-    }
-}
-
-fn set_window_resolution(mut window: Single<&mut Window>, settings: Res<Settings>) {
-    let res = settings.resolution.vec2();
-    // for now just setting to hd due to default
+fn set_window_resolution(mut window: Single<&mut Window>, resolution: Res<Resolution>) {
+    let res = resolution.vec2();
     window.resolution.set(res.x, res.y);
 }
 
-fn spawn_settings_menu(mut commands: Commands, settings: Res<Settings>) {
+fn spawn_settings_menu(mut commands: Commands, resolution: Res<Resolution>) {
+    let s = resolution.ui_scale();
+
+    // button dimensions (auto-height — text determines button size)
+    let btn_w = 140.0 * s;
+    let border = 4.0 * s;
+    let pad_x = 16.0 * s;
+    let pad_y = 8.0 * s;
+
+    // layout gaps
+    let row_gap = 20.0 * s;
+    let col_gap = 16.0 * s;
+
+    // standalone text sizes scale linearly
+    let title_font = 48.0 * s;
+    let label_font = 24.0 * s;
+
+    // button font proportional to button width
+    let btn_font = btn_w / 7.0;
+
+    // dropdown panel offset = head border + padding + font + border
+    let dropdown_top = border * 2.0 + pad_y + btn_font;
+
     commands
         .spawn((
-            SettingsCleanup,
+            DespawnOnExit(GameState::Settings),
             Node {
                 width: Val::Percent(100.0),
                 height: Val::Percent(100.0),
                 justify_content: JustifyContent::Center,
                 align_items: AlignItems::Center,
                 flex_direction: FlexDirection::Column,
-                row_gap: Val::Px(20.0),
+                row_gap: Val::Px(row_gap),
                 ..default()
             },
         ))
@@ -128,7 +81,7 @@ fn spawn_settings_menu(mut commands: Commands, settings: Res<Settings>) {
             parent.spawn((
                 Text::new("Settings"),
                 TextFont {
-                    font_size: 48.0,
+                    font_size: title_font,
                     ..default()
                 },
             ));
@@ -137,14 +90,14 @@ fn spawn_settings_menu(mut commands: Commands, settings: Res<Settings>) {
             parent
                 .spawn(Node {
                     align_items: AlignItems::Center,
-                    column_gap: Val::Px(16.0),
+                    column_gap: Val::Px(col_gap),
                     ..default()
                 })
                 .with_children(|row| {
                     row.spawn((
                         Text::new("Resolution:"),
                         TextFont {
-                            font_size: 24.0,
+                            font_size: label_font,
                             ..default()
                         },
                     ));
@@ -159,21 +112,21 @@ fn spawn_settings_menu(mut commands: Commands, settings: Res<Settings>) {
                                 DropdownHead,
                                 Button,
                                 Node {
-                                    width: Val::Px(140.0),
-                                    border: UiRect::all(Val::Px(4.0)),
-                                    padding: UiRect::axes(Val::Px(16.0), Val::Px(8.0)),
+                                    width: Val::Px(btn_w),
+                                    border: UiRect::all(Val::Px(border)),
+                                    padding: UiRect::axes(Val::Px(pad_x), Val::Px(pad_y)),
                                     justify_content: JustifyContent::Center,
                                     ..default()
                                 },
-                                BackgroundColor(UiColor::Lighter.linear_rgb()),
-                                BorderColor::all(UiColor::Darkest.linear_rgb()),
+                                BackgroundColor(UiColor::Lighter.color()),
+                                BorderColor::all(UiColor::Darkest.color()),
                                 button_colors.clone(),
                             ))
                             .with_child((
                                 DropdownLabel,
-                                Text::new(settings.resolution.label()),
+                                Text::new(resolution.label()),
                                 TextFont {
-                                    font_size: 20.0,
+                                    font_size: btn_font,
                                     ..default()
                                 },
                             ));
@@ -183,16 +136,16 @@ fn spawn_settings_menu(mut commands: Commands, settings: Res<Settings>) {
                                 DropdownPanel,
                                 Node {
                                     display: Display::None,
-                                    border: UiRect::all(Val::Px(4.0)),
-                                    padding: UiRect::axes(Val::Px(16.0), Val::Px(8.0)),
+                                    border: UiRect::all(Val::Px(border)),
+                                    padding: UiRect::axes(Val::Px(pad_x), Val::Px(pad_y)),
                                     flex_direction: FlexDirection::Column,
                                     position_type: PositionType::Absolute,
-                                    top: Val::Px(36.0),
-                                    width: Val::Px(140.0),
+                                    top: Val::Px(dropdown_top),
+                                    width: Val::Px(btn_w),
                                     ..default()
                                 },
-                                BackgroundColor(UiColor::Lightest.linear_rgb()),
-                                BorderColor::all(UiColor::Darkest.linear_rgb()),
+                                BackgroundColor(UiColor::Lightest.color()),
+                                BorderColor::all(UiColor::Darkest.color()),
                                 button_colors.clone(),
                                 GlobalZIndex(10),
                             ))
@@ -204,18 +157,21 @@ fn spawn_settings_menu(mut commands: Commands, settings: Res<Settings>) {
                                             Button,
                                             Node {
                                                 width: Val::Percent(100.0),
-                                                padding: UiRect::axes(Val::Px(16.0), Val::Px(8.0)),
+                                                padding: UiRect::axes(
+                                                    Val::Px(pad_x),
+                                                    Val::Px(pad_y),
+                                                ),
                                                 justify_content: JustifyContent::Center,
                                                 ..default()
                                             },
-                                            BackgroundColor(UiColor::Light.linear_rgb()),
-                                            BorderColor::all(UiColor::Darkest.linear_rgb()),
+                                            BackgroundColor(UiColor::Light.color()),
+                                            BorderColor::all(UiColor::Darkest.color()),
                                             button_colors.clone(),
                                         ))
                                         .with_child((
                                             Text::new(res.label()),
                                             TextFont {
-                                                font_size: 20.0,
+                                                font_size: btn_font,
                                                 ..default()
                                             },
                                         ));
@@ -226,21 +182,21 @@ fn spawn_settings_menu(mut commands: Commands, settings: Res<Settings>) {
                     row.spawn((
                         Button,
                         Node {
-                            width: Val::Px(140.0),
-                            border: UiRect::all(Val::Px(4.0)),
-                            padding: UiRect::axes(Val::Px(16.0), Val::Px(8.0)),
+                            width: Val::Px(btn_w),
+                            border: UiRect::all(Val::Px(border)),
+                            padding: UiRect::axes(Val::Px(pad_x), Val::Px(pad_y)),
                             justify_content: JustifyContent::Center,
                             ..default()
                         },
-                        BackgroundColor(UiColor::Lighter.linear_rgb()),
-                        BorderColor::all(UiColor::Darkest.linear_rgb()),
+                        BackgroundColor(UiColor::Lighter.color()),
+                        BorderColor::all(UiColor::Darkest.color()),
                         ChangeState(GameState::Menu),
                         button_colors.clone(),
                     ))
                     .with_child((
                         Text::new("Back"),
                         TextFont {
-                            font_size: 20.0,
+                            font_size: btn_font,
                             ..default()
                         },
                     ));
@@ -266,22 +222,16 @@ fn select_option(
     choice_query: Query<(&Interaction, &DropdownChoice), Changed<Interaction>>,
     mut label: Single<&mut Text, With<DropdownLabel>>,
     mut panel: Single<&mut Node, With<DropdownPanel>>,
-    mut settings: ResMut<Settings>,
+    mut resolution: ResMut<Resolution>,
     mut window: Single<&mut Window>,
 ) {
     for (interaction, choice) in &choice_query {
         if *interaction == Interaction::Pressed {
-            settings.resolution = choice.0;
+            *resolution = choice.0;
             let res = choice.0.vec2();
             window.resolution.set(res.x, res.y);
             label.0 = choice.0.label().to_string();
             panel.display = Display::None;
         }
-    }
-}
-
-fn cleanup_settings(mut commands: Commands, cleanup_query: Query<Entity, With<SettingsCleanup>>) {
-    for entity in cleanup_query.iter() {
-        commands.entity(entity).despawn();
     }
 }

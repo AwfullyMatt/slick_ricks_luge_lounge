@@ -34,6 +34,7 @@ pub struct SpriteAssets {
     #[asset(path = "sprites/luigee.png")]
     pub luigee: Handle<Image>,
 
+    #[allow(dead_code)]
     #[asset(path = "sprites/slick_rick.png")]
     pub slick_rick: Handle<Image>,
 

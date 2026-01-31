@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::InputMap;
 
-use crate::{GameState, actions::LugeAction};
+use crate::actions::LugeAction;
 
 pub struct PlayerPlugin;
 
@@ -11,14 +11,14 @@ impl Plugin for PlayerPlugin {
     }
 
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Playing), spawn_player)
-            .insert_resource(PlayerStats::default());
+        app.insert_resource(PlayerStats::default());
     }
 }
 
 #[derive(Component)]
 pub struct Player;
 
+#[allow(dead_code)]
 #[derive(Resource)]
 pub struct PlayerStats {
     pub attack: i32,
@@ -39,7 +39,7 @@ impl Default for PlayerStats {
 }
 
 impl Player {
-    fn default_input_map() -> InputMap<LugeAction> {
+    pub fn default_input_map() -> InputMap<LugeAction> {
         use LugeAction::*;
 
         let mut input_map = InputMap::default();
@@ -50,9 +50,4 @@ impl Player {
 
         input_map
     }
-}
-
-fn spawn_player(mut commands: Commands) {
-    commands.spawn((Player, Player::default_input_map()));
-    info!("Spawned Player.");
 }
