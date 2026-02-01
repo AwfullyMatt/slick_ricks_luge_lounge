@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::InputMap;
 
-use crate::actions::LugeAction;
+use crate::actions::GameAction;
 
 pub struct PlayerPlugin;
 
@@ -39,14 +39,18 @@ impl Default for PlayerStats {
 }
 
 impl Player {
-    pub fn default_input_map() -> InputMap<LugeAction> {
-        use LugeAction::*;
+    pub fn default_input_map() -> InputMap<GameAction> {
+        use GameAction::*;
 
         let mut input_map = InputMap::default();
 
         // Movement
         input_map.insert(Left, KeyCode::ArrowLeft);
         input_map.insert(Right, KeyCode::ArrowRight);
+
+        // Dialogue
+        input_map.insert(Continue, KeyCode::Space);
+        input_map.insert(Continue, MouseButton::Left);
 
         input_map
     }

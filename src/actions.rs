@@ -9,13 +9,15 @@ impl Plugin for ActionsPlugin {
     }
 
     fn build(&self, app: &mut App) {
-        app.add_plugins(InputManagerPlugin::<LugeAction>::default());
+        app.add_plugins(InputManagerPlugin::<GameAction>::default());
     }
 }
 
 #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
-pub enum LugeAction {
+pub enum GameAction {
     // Movement
     Left,
     Right,
+    // Ui
+    Continue,
 }

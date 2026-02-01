@@ -112,6 +112,7 @@ impl Plugin for GamePlugin {
         ));
         // Initialize gamestates
         app.init_state::<GameState>();
+        app.add_sub_state::<LugeState>();
         // Spawn camera
         app.add_systems(Startup, spawn_camera);
         // External plugins
