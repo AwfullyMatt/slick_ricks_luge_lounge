@@ -18,6 +18,7 @@ pub enum GameAction {
     // Movement
     Left,
     Right,
+    Brake,
     // Ui
     Continue,
 }

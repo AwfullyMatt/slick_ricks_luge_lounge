@@ -7,11 +7,18 @@ use crate::{
     ui::{ButtonColors, ChangeLugeState, UiColor},
 };
 
-use super::dialogue::{DialogueState, RickDialogue, RickLines};
 use super::RunTimer;
+use super::dialogue::{DialogueState, RickDialogue, RickLines};
+use super::spawner::PlayerCoins;
+
+#[derive(Component)]
+pub(super) struct DialogueHint;
 
 #[derive(Component)]
 pub(super) struct RunTimerText;
+
+#[derive(Component)]
+pub(super) struct CoinCountText;
 
 pub(super) fn spawn_slick_ui(
     mut commands: Commands,
@@ -78,6 +85,8 @@ pub(super) fn spawn_slick_ui(
                         padding: UiRect::axes(Val::Px(border), Val::Px(border)),
                         position_type: PositionType::Absolute,
                         bottom: Val::Px(0.0),
+                        flex_direction: FlexDirection::Column,
+                        justify_content: JustifyContent::SpaceBetween,
                         ..default()
                     },
                     BorderColor::all(UiColor::Light.color()),
@@ -91,6 +100,16 @@ pub(super) fn spawn_slick_ui(
                             font_size: 24.0 * s,
                             ..default()
                         },
+                    ));
+                    text_parent.spawn((
+                        DialogueHint,
+                        Text::new("[Space / Click] to continue"),
+                        TextFont {
+                            font: fonts.tiny5.clone(),
+                            font_size: 16.0 * s,
+                            ..default()
+                        },
+                        TextColor(UiColor::Lighter.color()),
                     ));
                 });
         });
@@ -171,6 +190,15 @@ pub(super) fn spawn_luigee_ui(
                             ..default()
                         },
                     ));
+                    stats_parent.spawn((
+                        CoinCountText,
+                        Text::new("Coins: 0"),
+                        TextFont {
+                            font: font.clone(),
+                            font_size,
+                            ..default()
+                        },
+                    ));
                 });
 
             parent
@@ -191,6 +219,7 @@ pub(super) fn spawn_luigee_ui(
                         .spawn((
                             Name::new("Launch Button"),
                             Button,
+                            Visibility::Hidden,
                             ChangeLugeState(LugeState::Launched),
                             ButtonColors::default(),
                             Node {
@@ -216,6 +245,20 @@ pub(super) fn spawn_luigee_ui(
         });
 }
 
+pub(super) fn toggle_launch_button(
+    dialogue_state: Res<DialogueState>,
+    mut button: Single<&mut Visibility, With<ChangeLugeState>>,
+    mut hint: Single<&mut Visibility, (With<DialogueHint>, Without<ChangeLugeState>)>,
+) {
+    if dialogue_state.waiting_for_input {
+        **button = Visibility::Hidden;
+        **hint = Visibility::Visible;
+    } else {
+        **button = Visibility::Visible;
+        **hint = Visibility::Hidden;
+    }
+}
+
 pub(super) fn update_run_timer_text(
     timer: Res<RunTimer>,
     mut query: Query<&mut Text, With<RunTimerText>>,
@@ -228,3 +271,13 @@ pub(super) fn update_run_timer_text(
     }
 }
 
+pub(super) fn update_coin_count_text(
+    player_coins: Res<PlayerCoins>,
+    mut query: Query<&mut Text, With<CoinCountText>>,
+) {
+    if player_coins.is_changed() {
+        for mut text in &mut query {
+            **text = format!("Coins: {}", **player_coins);
+        }
+    }
+}

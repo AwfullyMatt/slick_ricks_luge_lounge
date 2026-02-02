@@ -47,6 +47,7 @@ impl Player {
         // Movement
         input_map.insert(Left, KeyCode::ArrowLeft);
         input_map.insert(Right, KeyCode::ArrowRight);
+        input_map.insert(Brake, KeyCode::ArrowDown);
 
         // Dialogue
         input_map.insert(Continue, KeyCode::Space);

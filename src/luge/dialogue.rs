@@ -122,11 +122,14 @@ pub(super) fn advance_dialogue(
                 dialogue_state.line_index = 0;
                 if let Some(line) = rick_lines.get_line(next_scene, 0) {
                     rick_text.0 = line.to_string();
+                    return;
                 }
-            } else {
-                dialogue_state.waiting_for_input = false;
-                rick_text.0 = String::new();
+                if let Some(scene) = rick_lines.get_scene_mut(next_scene) {
+                    scene.completed = true;
+                }
             }
+            dialogue_state.waiting_for_input = false;
+            rick_text.0 = String::new();
         }
     }
 }

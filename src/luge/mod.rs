@@ -1,4 +1,5 @@
 mod dialogue;
+mod spawner;
 mod ui;
 
 use bevy::{prelude::*, time::Stopwatch};
@@ -30,14 +31,26 @@ impl Plugin for LugePlugin {
                 ui::spawn_luigee_ui,
                 update_lanes,
                 set_input_cooldown,
+                spawner::init_coin_atlas,
+                spawner::reset_player_coins,
             ),
         )
-        .add_systems(OnEnter(LugeState::Launched), reset_run_timer)
+        .add_systems(OnEnter(LugeState::Loadout), reset_luge)
+        .add_systems(
+            OnEnter(LugeState::Launched),
+            (
+                reset_run_timer,
+                reset_scroll_speed,
+                spawner::init_spawn_timer,
+                spawner::spawn_initial_coin,
+            ),
+        )
         .add_systems(
             Update,
             (
                 consume_stale_input.run_if(resource_exists::<InputCooldown>),
                 dialogue::advance_dialogue,
+                ui::toggle_launch_button,
             )
                 .chain()
                 .run_if(in_state(LugeState::Loadout)),
@@ -47,24 +60,35 @@ impl Plugin for LugePlugin {
             (
                 tick_run_timer,
                 ui::update_run_timer_text,
+                decelerate_luigee,
                 move_luigee,
                 update_luigee_sprite,
                 scroll_lanes,
+                (
+                    spawner::spawn_coins,
+                    spawner::scroll_occupants,
+                    spawner::collect_coins,
+                    spawner::despawn_offscreen,
+                )
+                    .chain(),
+                ui::update_coin_count_text,
             )
                 .run_if(in_state(LugeState::Launched)),
         )
+        .add_systems(OnExit(LugeState::Launched), spawner::cleanup_spawner)
         .insert_resource(Lanes::default())
         .insert_resource(PlayerLane::default())
         .insert_resource(ScrollSpeed::default())
         .insert_resource(DialogueState::default())
         .insert_resource(RunTimer::default())
-        .insert_resource(RickLines::init());
+        .insert_resource(RickLines::init())
+        .insert_resource(spawner::PlayerCoins::default());
     }
 }
 
 // marker components
 #[derive(Component)]
-struct LuigeeSprite;
+pub(super) struct LuigeeSprite;
 
 #[derive(Component)]
 struct LaneSprite;
@@ -157,7 +181,7 @@ pub struct Lane {
     pub x: f32,
 }
 
-#[derive(Default, Copy, Clone, Debug)]
+#[derive(Default, Copy, Clone, Debug, PartialEq)]
 pub enum LaneLocation {
     Left,
     #[default]
@@ -271,4 +295,45 @@ fn tick_run_timer(time: Res<Time>, mut timer: ResMut<RunTimer>) {
 
 fn reset_run_timer(mut timer: ResMut<RunTimer>) {
     timer.0.reset();
+}
+
+const BASE_DECELERATION: f32 = 50.0;
+
+fn decelerate_luigee(
+    time: Res<Time>,
+    player_stats: Res<PlayerStats>,
+    mut scroll_speed: ResMut<ScrollSpeed>,
+    mut next_state: ResMut<NextState<LugeState>>,
+    action_state: Single<&ActionState<GameAction>, With<Player>>,
+) {
+    let braking = if action_state.pressed(&GameAction::Brake) {
+        3.0
+    } else {
+        1.0
+    };
+    let decel = BASE_DECELERATION / player_stats.speed as f32 * braking;
+    **scroll_speed = (**scroll_speed - decel * time.delta_secs()).max(0.0);
+
+    if **scroll_speed == 0.0 {
+        next_state.set(LugeState::Loadout);
+    }
+}
+
+fn reset_scroll_speed(mut scroll_speed: ResMut<ScrollSpeed>) {
+    *scroll_speed = ScrollSpeed::default();
+}
+
+fn reset_luge(
+    resolution: Res<Resolution>,
+    mut player_lane: ResMut<PlayerLane>,
+    mut luigee: Single<&mut Transform, With<LuigeeSprite>>,
+    mut lanes: Query<&mut Transform, (With<LaneSprite>, Without<LuigeeSprite>)>,
+) {
+    **player_lane = LaneLocation::default();
+    luigee.translation.x = 0.0;
+
+    let offsets = [0.0, 360.0 * resolution.scale()];
+    for (i, mut transform) in lanes.iter_mut().enumerate() {
+        transform.translation.y = offsets[i];
+    }
 }

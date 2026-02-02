@@ -11,6 +11,7 @@ fn main() -> AppExit {
                 .set(WindowPlugin {
                     primary_window: Some(Window {
                         title: "Slick Rick's Luge Lounge".to_string(),
+                        resizable: false,
                         canvas: Some("#bevy".to_owned()),
                         fit_canvas_to_parent: true,
                         prevent_default_event_handling: false,

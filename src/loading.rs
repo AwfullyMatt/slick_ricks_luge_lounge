@@ -44,6 +44,13 @@ pub struct SpriteAssets {
 
     #[asset(path = "sprites/lanes.png")]
     pub lanes: Handle<Image>,
+
+    #[asset(path = "sprites/slick_coins_atlas.png")]
+    pub coins: Handle<Image>,
+
+    #[allow(dead_code)]
+    #[asset(path = "sprites/enemies_atlas.png")]
+    pub enemies: Handle<Image>,
 }
 
 #[derive(AssetCollection, Resource)]
