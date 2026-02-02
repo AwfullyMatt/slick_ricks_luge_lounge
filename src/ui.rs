@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::GameState;
+use crate::{GameState, LugeState};
 
 pub struct UiPlugin;
 
@@ -8,8 +8,11 @@ impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
-            button_click_handler
-                .run_if(in_state(GameState::Menu).or(in_state(GameState::Settings))),
+            button_click_handler.run_if(
+                in_state(GameState::Menu)
+                    .or(in_state(GameState::Settings))
+                    .or(in_state(GameState::Playing)),
+            ),
         );
     }
 }
@@ -59,6 +62,9 @@ pub struct ChangeState(pub GameState);
 #[derive(Component)]
 pub struct OpenLink(pub &'static str);
 
+#[derive(Component)]
+pub struct ChangeLugeState(pub LugeState);
+
 // helper method to make fonts fit
 pub fn font_size_for(width: f32, height: f32, text: &str) -> f32 {
     let from_height = height * 0.7;
@@ -68,6 +74,7 @@ pub fn font_size_for(width: f32, height: f32, text: &str) -> f32 {
 
 pub fn button_click_handler(
     mut next_state: ResMut<NextState<GameState>>,
+    mut next_luge_state: ResMut<NextState<LugeState>>,
     mut interaction_query: Query<
         (
             &Interaction,
@@ -75,11 +82,14 @@ pub fn button_click_handler(
             &ButtonColors,
             Option<&ChangeState>,
             Option<&OpenLink>,
+            Option<&ChangeLugeState>,
         ),
         (Changed<Interaction>, With<Button>),
     >,
 ) {
-    for (interaction, mut color, button_colors, change_state, open_link) in &mut interaction_query {
+    for (interaction, mut color, button_colors, change_state, open_link, change_luge_state) in
+        &mut interaction_query
+    {
         match *interaction {
             Interaction::Pressed => {
                 if let Some(state) = change_state {
@@ -88,6 +98,8 @@ pub fn button_click_handler(
                     && let Err(error) = webbrowser::open(link.0)
                 {
                     warn!("Failed to open link {error:?}");
+                } else if let Some(state) = change_luge_state {
+                    next_luge_state.set(state.0.clone());
                 }
             }
             Interaction::Hovered => {

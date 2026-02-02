@@ -4,13 +4,14 @@ use crate::{
     GameState, LugeState, Resolution,
     loading::{FontAssets, SpriteAssets},
     player::PlayerStats,
-    ui::{ButtonColors, UiColor},
+    ui::{ButtonColors, ChangeLugeState, UiColor},
 };
 
 use super::dialogue::{DialogueState, RickDialogue, RickLines};
+use super::RunTimer;
 
 #[derive(Component)]
-pub(super) struct LaunchButton;
+pub(super) struct RunTimerText;
 
 pub(super) fn spawn_slick_ui(
     mut commands: Commands,
@@ -161,6 +162,15 @@ pub(super) fn spawn_luigee_ui(
                             },
                         ));
                     }
+                    stats_parent.spawn((
+                        RunTimerText,
+                        Text::new("00:00.00"),
+                        TextFont {
+                            font: font.clone(),
+                            font_size,
+                            ..default()
+                        },
+                    ));
                 });
 
             parent
@@ -181,7 +191,7 @@ pub(super) fn spawn_luigee_ui(
                         .spawn((
                             Name::new("Launch Button"),
                             Button,
-                            LaunchButton,
+                            ChangeLugeState(LugeState::Launched),
                             ButtonColors::default(),
                             Node {
                                 padding: UiRect::axes(Val::Px(24.0 * s), Val::Px(12.0 * s)),
@@ -206,24 +216,15 @@ pub(super) fn spawn_luigee_ui(
         });
 }
 
-pub(super) fn launch_button_handler(
-    mut next_luge_state: ResMut<NextState<LugeState>>,
-    mut interaction_query: Query<
-        (&Interaction, &mut BackgroundColor, &ButtonColors),
-        (Changed<Interaction>, With<LaunchButton>),
-    >,
+pub(super) fn update_run_timer_text(
+    timer: Res<RunTimer>,
+    mut query: Query<&mut Text, With<RunTimerText>>,
 ) {
-    for (interaction, mut color, button_colors) in &mut interaction_query {
-        match *interaction {
-            Interaction::Pressed => {
-                next_luge_state.set(LugeState::Launched);
-            }
-            Interaction::Hovered => {
-                *color = button_colors.hovered.into();
-            }
-            Interaction::None => {
-                *color = button_colors.normal.into();
-            }
-        }
+    let elapsed = timer.0.elapsed_secs();
+    let minutes = (elapsed / 60.0) as u32;
+    let seconds = elapsed % 60.0;
+    for mut text in &mut query {
+        **text = format!("{:02}:{:05.2}", minutes, seconds);
     }
 }
+

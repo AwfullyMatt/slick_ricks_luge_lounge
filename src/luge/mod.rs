@@ -1,7 +1,7 @@
 mod dialogue;
 mod ui;
 
-use bevy::prelude::*;
+use bevy::{prelude::*, time::Stopwatch};
 use leafwing_input_manager::prelude::ActionState;
 
 use crate::{
@@ -32,24 +32,32 @@ impl Plugin for LugePlugin {
                 set_input_cooldown,
             ),
         )
+        .add_systems(OnEnter(LugeState::Launched), reset_run_timer)
         .add_systems(
             Update,
             (
                 consume_stale_input.run_if(resource_exists::<InputCooldown>),
                 dialogue::advance_dialogue,
-                ui::launch_button_handler,
             )
                 .chain()
                 .run_if(in_state(LugeState::Loadout)),
         )
         .add_systems(
             Update,
-            (move_luigee, update_luigee_sprite, scroll_lanes).run_if(in_state(LugeState::Launched)),
+            (
+                tick_run_timer,
+                ui::update_run_timer_text,
+                move_luigee,
+                update_luigee_sprite,
+                scroll_lanes,
+            )
+                .run_if(in_state(LugeState::Launched)),
         )
         .insert_resource(Lanes::default())
         .insert_resource(PlayerLane::default())
         .insert_resource(ScrollSpeed::default())
         .insert_resource(DialogueState::default())
+        .insert_resource(RunTimer::default())
         .insert_resource(RickLines::init());
     }
 }
@@ -60,6 +68,9 @@ struct LuigeeSprite;
 
 #[derive(Component)]
 struct LaneSprite;
+
+#[derive(Resource, Default, Deref, DerefMut)]
+struct RunTimer(Stopwatch);
 
 fn spawn_luigee(mut commands: Commands, resolution: Res<Resolution>, sprites: Res<SpriteAssets>) {
     let y = -(resolution.vec2().y / 3.0);
@@ -252,4 +263,12 @@ fn consume_stale_input(
         state.enable_action(&GameAction::Continue);
     }
     commands.remove_resource::<InputCooldown>();
+}
+
+fn tick_run_timer(time: Res<Time>, mut timer: ResMut<RunTimer>) {
+    timer.0.tick(time.delta());
+}
+
+fn reset_run_timer(mut timer: ResMut<RunTimer>) {
+    timer.0.reset();
 }
